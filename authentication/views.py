@@ -8,6 +8,8 @@ from django.utils.decorators import method_decorator
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from rest_framework.permissions import AllowAny, IsAuthenticated
+from .models import OTPVerification
+import random
 
 from .serializers import UserRegistrationSerializer, UserDetailsSerializer
 
@@ -30,10 +32,23 @@ class UserRegistrationView(APIView):
     )
     def post(self, request):
         serializer = UserRegistrationSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+        
+        # Check if the serializer is valid
+        if not serializer.is_valid():
+            print(serializer.errors)  # Log the errors for debugging
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
         user = serializer.save()
+
+        # Generate OTP
+        otp = str(random.randint(100000, 999999))  # Generate a 6-digit OTP
+        OTPVerification.objects.create(user=user, otp=otp)
+
+        # Here you would send the OTP to the user's email
+        # send_otp_email(user.email, otp)  # Implement this function
+
         return Response(
-            {'message': 'User registered successfully', 'user_id': str(user.id)},
+            {'message': 'User registered successfully. An OTP has been sent to your email.', 'user_id': str(user.id)},
             status=status.HTTP_201_CREATED
         )
 
@@ -45,17 +60,19 @@ class UserLoginView(APIView):
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
             properties={
-                'username': openapi.Schema(type=openapi.TYPE_STRING),
+                'email': openapi.Schema(type=openapi.TYPE_STRING),
                 'password': openapi.Schema(type=openapi.TYPE_STRING)
             }
         ),
         responses={200: 'Login Successful'}
     )
     def post(self, request):
-        username = request.data.get('username')
+        email = request.data.get('email')
         password = request.data.get('password')
 
-        user = authenticate(request, username=username, password=password)
+        print(f"Attempting to log in with email: {email} and password: {password}")
+
+        user = authenticate(request, email=email, password=password)
 
         if user is not None:
             login(request, user)
@@ -71,6 +88,7 @@ class UserLoginView(APIView):
             )
             return response
 
+        print("Login failed: Invalid credentials")
         return Response(
             {'error': 'Invalid credentials'},
             status=status.HTTP_401_UNAUTHORIZED
@@ -93,3 +111,29 @@ class UserLogoutView(APIView):
         response = Response({'message': 'Logout successful'})
         response.delete_cookie('auth_token')
         return response
+
+
+class OTPVerificationView(APIView):
+    permission_classes = [AllowAny]
+
+    @swagger_auto_schema(
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'user_id': openapi.Schema(type=openapi.TYPE_STRING),
+                'otp': openapi.Schema(type=openapi.TYPE_STRING)
+            }
+        ),
+        responses={200: 'OTP verified successfully', 400: 'Invalid or expired OTP'}
+    )
+    def post(self, request):
+        user_id = request.data.get('user_id')
+        otp = request.data.get('otp')
+
+        try:
+            otp_verification = OTPVerification.objects.get(user__id=user_id, otp=otp, is_verified=False)
+            otp_verification.is_verified = True
+            otp_verification.save()
+            return Response({'message': 'OTP verified successfully'}, status=status.HTTP_200_OK)
+        except OTPVerification.DoesNotExist:
+            return Response({'error': 'Invalid or expired OTP'}, status=status.HTTP_400_BAD_REQUEST)

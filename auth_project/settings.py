@@ -27,8 +27,6 @@ if os.path.exists(env_file):
 else:
     print(f"⚠️ .env file NOT FOUND at {env_file}")
 
-print("EMAIL_HOST_USER:", env("EMAIL_HOST_USER", default="NOT FOUND"))
-print("EMAIL_HOST_PASSWORD:", env("EMAIL_HOST_PASSWORD", default="NOT FOUND"))
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -153,7 +151,3 @@ EMAIL_PORT = env.int('EMAIL_PORT', default=587)
 EMAIL_USE_TLS = env.bool('EMAIL_USE_TLS', default=True)
 EMAIL_HOST_USER = env('EMAIL_HOST_USER', default='your_email@gmail.com')
 EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', default='your_email_password')
-
-print(os.environ.get('EMAIL_HOST_PASSWORD'))
-
-print(EMAIL_HOST_PASSWORD, EMAIL_HOST_USER)

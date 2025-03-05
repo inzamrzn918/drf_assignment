@@ -25,7 +25,7 @@ class CSRFTokenView(APIView):
     @method_decorator(ensure_csrf_cookie)
     def get(self, request):
         csrf_token = get_token(request)
-        return Response({'csrf_token': csrf_token})
+        return Response({'success': True, 'csrf_token': csrf_token})
 
 
 class UserRegistrationView(APIView):
@@ -41,7 +41,7 @@ class UserRegistrationView(APIView):
         # Check if the serializer is valid
         if not serializer.is_valid():
             print(serializer.errors)  # Log the errors for debugging
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'success': False, 'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
         user = serializer.save()
 
@@ -53,7 +53,7 @@ class UserRegistrationView(APIView):
         # send_otp_email(user.email, otp)  # Implement this function
         send_otp_email(user.email, otp)
         return Response(
-            {'message': 'User registered successfully. An OTP has been sent to your email.', 'user_id': str(user.id)},
+            {'success': True, 'message': 'User registered successfully. An OTP has been sent to your email.', 'user_id': str(user.id)},
             status=status.HTTP_201_CREATED
         )
 
@@ -83,7 +83,7 @@ class UserLoginView(APIView):
             login(request, user)
 
             # Set secure HTTP-only cookie
-            response = Response({'message': 'Login successful'})
+            response = Response({'success': True, 'message': 'Login successful', 'user': {'first_name': user.first_name, 'last_name': user.last_name}})
             response.set_cookie(
                 'auth_token',
                 str(user.id),
@@ -95,7 +95,7 @@ class UserLoginView(APIView):
 
         print("Login failed: Invalid credentials")
         return Response(
-            {'error': 'Invalid credentials'},
+            {'success': False, 'error': 'Invalid credentials'},
             status=status.HTTP_401_UNAUTHORIZED
         )
 
@@ -105,7 +105,7 @@ class UserDetailsView(APIView):
 
     def get(self, request):
         serializer = UserDetailsSerializer(request.user)
-        return Response(serializer.data)
+        return Response({'success': True, 'user': serializer.data})
 
 
 class UserLogoutView(APIView):
@@ -113,7 +113,7 @@ class UserLogoutView(APIView):
 
     def post(self, request):
         logout(request)
-        response = Response({'message': 'Logout successful'})
+        response = Response({'success': True, 'message': 'Logout successful'})
         response.delete_cookie('auth_token')
         return response
 
@@ -139,9 +139,9 @@ class OTPVerificationView(APIView):
             otp_verification = OTPVerification.objects.get(user__id=user_id, otp=otp, is_verified=False)
             otp_verification.is_verified = True
             otp_verification.save()
-            return Response({'message': 'OTP verified successfully'}, status=status.HTTP_200_OK)
+            return Response({'success': True, 'message': 'OTP verified successfully'}, status=status.HTTP_200_OK)
         except OTPVerification.DoesNotExist:
-            return Response({'error': 'Invalid or expired OTP'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'success': False, 'error': 'Invalid or expired OTP'}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class LoginPageViewHtml(TemplateView):

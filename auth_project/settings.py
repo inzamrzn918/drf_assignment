@@ -15,7 +15,20 @@ import os
 import environ
 
 env = environ.Env()
-environ.Env.read_env()
+env.read_env()
+
+# Define BASE_DIR
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+env_file = os.path.join(BASE_DIR, '.env')
+if os.path.exists(env_file):
+    print(f"✅ Loading .env file from: {env_file}")
+    environ.Env.read_env(env_file)
+else:
+    print(f"⚠️ .env file NOT FOUND at {env_file}")
+
+print("EMAIL_HOST_USER:", env("EMAIL_HOST_USER", default="NOT FOUND"))
+print("EMAIL_HOST_PASSWORD:", env("EMAIL_HOST_PASSWORD", default="NOT FOUND"))
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -26,10 +39,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-e3#iek9m@6rd+k6dcw@ihzxpgi692hp^r*fgpq%-%eqxdbn@+3'
+SECRET_KEY = env('SECRET_KEY', default='your-default-secret-key')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = env.bool('DEBUG', default=True)
 
 ALLOWED_HOSTS = []
 
@@ -131,3 +144,16 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AUTHENTICATION_BACKENDS = ['authentication.backends.EmailBackend']
 AUTH_USER_MODEL = 'authentication.User'
+
+
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = env('EMAIL_HOST', default='smtp.gmail.com')
+EMAIL_PORT = env.int('EMAIL_PORT', default=587)
+EMAIL_USE_TLS = env.bool('EMAIL_USE_TLS', default=True)
+EMAIL_HOST_USER = env('EMAIL_HOST_USER', default='your_email@gmail.com')
+EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', default='your_email_password')
+
+print(os.environ.get('EMAIL_HOST_PASSWORD'))
+
+print(EMAIL_HOST_PASSWORD, EMAIL_HOST_USER)

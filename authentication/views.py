@@ -1,3 +1,5 @@
+from django.shortcuts import render
+from django.views.generic import TemplateView
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -8,10 +10,13 @@ from django.utils.decorators import method_decorator
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from rest_framework.permissions import AllowAny, IsAuthenticated
+from urllib3 import request
+
 from .models import OTPVerification
 import random
 
 from .serializers import UserRegistrationSerializer, UserDetailsSerializer
+from .utils import send_otp_email
 
 
 class CSRFTokenView(APIView):
@@ -46,7 +51,7 @@ class UserRegistrationView(APIView):
 
         # Here you would send the OTP to the user's email
         # send_otp_email(user.email, otp)  # Implement this function
-
+        send_otp_email(user.email, otp)
         return Response(
             {'message': 'User registered successfully. An OTP has been sent to your email.', 'user_id': str(user.id)},
             status=status.HTTP_201_CREATED
@@ -137,3 +142,7 @@ class OTPVerificationView(APIView):
             return Response({'message': 'OTP verified successfully'}, status=status.HTTP_200_OK)
         except OTPVerification.DoesNotExist:
             return Response({'error': 'Invalid or expired OTP'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class LoginPageViewHtml(TemplateView):
+    template_name = "ui/index.html"

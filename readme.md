@@ -126,4 +126,4 @@ This project is a Django-based authentication system that includes user registra
 
 ## License
 
-This project is licensed under the MIT License. See the LICENSE file for more details.
+This project is licensed under the MIT License.
